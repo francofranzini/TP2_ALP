@@ -42,6 +42,9 @@ conversionaux (LVar s) xs = case elemIndex s xs of
 conversionaux (LAbs s t l) xs = Lam t (conversionaux l (s:xs)) 
 conversionaux (LApp l r) xs =  conversionaux l xs :@: conversionaux r xs
 conversionaux (LLet x t1 t2) xs = Let (conversionaux t1 xs) (conversionaux t2 (x:xs))
+conversionaux (LZero) xs = Zero
+conversionaux (LSuc t) xs = Suc (conversionaux t xs)
+conversionaux (LRec t1 t2 t3) xs =  Rec (conversionaux t1 xs) (conversionaux t2 xs) (conversionaux t3 xs)
 
 
 
@@ -57,10 +60,18 @@ sub _ _ (Free n   )           = Free n
 sub i t (u   :@: v)           = sub i t u :@: sub i t v
 sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
 sub i t (Let t1 t2) = Let (sub i t t1) (sub (i + 1) t t2)
+sub i t  Zero       = Zero
+sub i t (Suc n)     = Suc (sub i t n)
+sub i t (Rec t1 t2 t3) = Rec (sub i t t1) (sub i t t2) (sub i t t3) 
 
 -- convierte un valor en el término equivalente
 quote :: Value -> Term
 quote (VLam t f) = Lam t f
+quote (VNum n) = quoteNum n
+
+quoteNum :: NumVal -> Term
+quoteNum NZero    = Zero
+quoteNum (NSuc n) = Suc (quoteNum n)
 
 -- evalúa un término en un entorno dado
 eval :: NameEnv Value Type -> Term -> Value
@@ -73,6 +84,12 @@ eval nvs (t1 :@: t2 )         = case eval nvs t1 of
                                       in  eval nvs (sub 0 (quote v2) term)
 eval nvs (Let t1 t2)          = let v1 = eval nvs t1
                                 in  eval nvs (sub 0 (quote v1) t2) 
+eval nvs (Zero)               = VNum NZero
+eval nvs (Suc t)              = case eval nvs t of
+                                VNum n -> VNum (NSuc n)
+eval nvs (Rec t1 t2 t3)       = case eval nvs t3 of
+                                VNum NZero -> eval nvs t1
+                                VNum (NSuc n) -> eval nvs (t2 :@: (Rec t1 t2 (quote (VNum n))) :@: quote (VNum n)) 
 --[(name, (v, t))]
 ----------------------
 --- type checker
@@ -121,5 +138,16 @@ infer' c e (t :@: u) = infer' c e t >>= \tt -> infer' c e u >>= \tu ->
     _          -> notfunError tt
 infer' c e (Lam t u) = infer' (t : c) e u >>= \tu -> ret $ FunT t tu
 infer' c e (Let t u) = infer' c e t >>= \tt -> infer' (tt : c) e u
+infer' _ _  Zero    = ret  NatT
+infer' c e (Suc t) = infer'  c e t >>= \tt -> if tt == NatT then ret NatT else matchError NatT tt
+infer' c e (Rec t1 t2 t3) =
+  infer' c e t1 >>= \tt1 ->          
+  infer' c e t2 >>= \tt2 ->
+  infer' c e t3 >>= \tt3 ->
+  if tt2 /= FunT tt1 (FunT NatT tt1)
+    then matchError (FunT tt1 (FunT NatT tt1)) tt2   -- t2 no tiene la forma T -> Nat -> T
+    else if tt3 /= NatT
+      then matchError NatT tt3                       -- t3 no es Nat
+      else ret tt1                                   -- todo bien: el resultado es T
 
 

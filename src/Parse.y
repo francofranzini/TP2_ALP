@@ -49,19 +49,22 @@ Defexp  : DEF VAR '=' Exp              { Def $2 $4 }
 
 Exp     :: { LamTerm }
         : '\\' VAR ':' Type '.' Exp    { LAbs $2 $4 $6 }
-        | NAbs                         { $1 }
+        | RExp                         { $1 }
         -- Ej3
         | LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
         -- Ej4
-        
-        
-        
+RExp    :: { LamTerm }
+        : R Atom Atom Atom             { LRec $2 $3 $4}
+        | SExp                         { $1 }
+
+SExp    :: { LamTerm }
+        : SUC SExp                     { LSuc $2 }
+        | NAbs                         { $1 }
+
         
 NAbs    :: { LamTerm }
         : NAbs Atom                    { LApp $1 $2 }
         | Atom                         { $1 }
-        | SUC Exp                      { LSuc $2 }
-        | R Exp Exp Exp                { LRec $2 $3 $4 }
         
 
 Atom    :: { LamTerm }
@@ -72,7 +75,7 @@ Atom    :: { LamTerm }
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
         | '(' Type ')'                 { $2 }
-        | NAT                           { NatT }
+        | TNAT                          { NatT }
 
 Defs    : Defexp Defs                  { $1 : $2 }
         |                              { [] }
