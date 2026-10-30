@@ -1,0 +1,14 @@
+-- Ejercicio 5: funcion de Ackermann
+--   Ack 0 n = n + 1
+--   Ack m 0 = Ack (m - 1) 1
+--   Ack m n = Ack (m - 1) (Ack m (n - 1))
+--
+-- R externo sobre m, con T = Nat -> Nat: f es Ack (m - 1).
+-- R interno sobre n, con T = Nat: r es Ack m (n - 1).
+--
+-- Pruebas:
+--   Ack 0 0                         ~> suc 0
+--   Ack (suc 0) (suc 0)             ~> suc (suc (suc 0))
+--   Ack (suc (suc 0)) (suc 0)       ~> 5
+
+def Ack = \m:Nat. R (\n:Nat. suc n) (\f:Nat->Nat. \k:Nat. \n:Nat. R (f (suc 0)) (\r:Nat. \j:Nat. f r) n) m
