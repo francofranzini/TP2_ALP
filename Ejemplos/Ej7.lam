@@ -1,0 +1,25 @@
+-- elimDups, que dada una lista de naturales,
+-- elimine los elementos duplicados de la misma, quedandose 
+-- con las primeras ocurrencias de los elementos.
+
+
+-- pred :: Nat -> Nat 
+def pred =  \n:Nat . R 0 (\x:Nat. \r:Nat. r) n
+
+-- n - m
+-- resta :: Nat -> Nat -> Nat 
+def resta = \n:Nat. \m: Nat. R n (\x:Nat. \r:Nat. (pred x)) m
+
+-- suma :: Nat -> Nat -> Nat 
+def suma = \n:Nat. \m:Nat. R n (\x:Nat. \r:Nat. suc x) m
+
+-- eq :: Nat -> Nat -> Nat 
+def eq = \n:Nat. \m:Nat. R (suc 0) (\x:Nat.\r:Nat. 0) (suma(resta n m) (resta m n))
+
+
+-- elimOcurr :: List Nat -> Nat -> List Nat
+def elimOcurr = \xs:List Nat. \n:Nat. 
+    RL nil (\x:Nat. \r:List Nat. R (cons x r) (\e:List Nat. \rr:Nat. r) (eq x n)) xs
+ 
+-- elimDups :: List Nat -> List Nat 
+def elimDups = \xs:List Nat. RL nil (\x: Nat. \r:List Nat. (cons x (elimOcurr r x)) ) xs  
