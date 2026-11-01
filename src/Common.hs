@@ -11,7 +11,7 @@ module Common where
 
   -- Tipos de los nombres
   data Name =  Global  String
-    deriving (Show, Eq)
+    deriving (Show, Eq) 
 
   -- Entornos
   type NameEnv v t = [(Name, (v, t))]
@@ -37,6 +37,7 @@ module Common where
                 -- listas
                 |  LNil
                 |  LCons LamTerm LamTerm
+                |  LRL LamTerm LamTerm LamTerm
                 deriving (Show, Eq)
 
 
@@ -54,6 +55,7 @@ module Common where
              -- listas
              | Nil
              | Cons Term Term
+             | RL Term Term Term
           deriving (Show, Eq)
 
   -- Valores

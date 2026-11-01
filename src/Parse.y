@@ -34,6 +34,13 @@ import Data.Char
     SUC     { TSuc }
     ZERO    { TZero }
 
+    -- Ej6
+    TLIST   { TList }
+    NIL     { TNil }
+    CONS    { TCons }
+    RL      { TRList }
+
+
     
     
 
@@ -53,8 +60,17 @@ Exp     :: { LamTerm }
         -- Ej3
         | LET VAR '=' Exp IN Exp       { LLet $2 $4 $6 }
         -- Ej4
+
 RExp    :: { LamTerm }
         : R Atom Atom Atom             { LRec $2 $3 $4}
+        | RLExp                        { $1 }
+
+RLExp   :: { LamTerm }
+        : RL Atom Atom Atom            { LRL $2 $3 $4}
+        | CExp                         { $1 }
+
+CExp    :: { LamTerm }
+        : CONS Atom Atom               { LCons $2 $3 }
         | SExp                         { $1 }
 
 SExp    :: { LamTerm }
@@ -71,11 +87,13 @@ Atom    :: { LamTerm }
         : VAR                          { LVar $1 }  
         | '(' Exp ')'                  { $2 }
         | ZERO                         { LZero }
+        | NIL                          { LNil }
 
 Type    : TYPEE                        { EmptyT }
         | Type '->' Type               { FunT $1 $3 }
         | '(' Type ')'                 { $2 }
-        | TNAT                          { NatT }
+        | TNAT                         { NatT }
+        | TLIST TNAT                   { ListT }
 
 Defs    : Defexp Defs                  { $1 : $2 }
         |                              { [] }
@@ -128,6 +146,11 @@ data Token = TVar String
                | TSuc
                | TRec
                | TZero
+               --Ej 6
+               | TList
+               | TNil
+               | TCons
+               | TRList
                deriving Show
 
 ----------------------------------
@@ -154,7 +177,8 @@ lexer cont s = case s of
                     where lexVar cs = case span isAlpha cs of
                               ("E",rest)    -> cont TTypeE rest
                               ("Nat",rest)  -> cont TNat rest
-                              
+                              ("List", rest)-> cont TList rest
+
                               ("def",rest)  -> cont TDef rest
                               
                               ("let", rest) -> cont TLet rest
@@ -162,6 +186,12 @@ lexer cont s = case s of
                               
                               ("suc",rest)  -> cont TSuc rest
                               ("R",rest)    -> cont TRec rest
+
+                              --Ej 6
+                              ("nil", rest) -> cont TNil rest
+                              ("cons", rest)-> cont TCons rest
+                              ("RL", rest)  -> cont TRList rest
+
                               
                               (var,rest)    -> cont (TVar var) rest
                           consumirBK anidado cl cont s = case s of

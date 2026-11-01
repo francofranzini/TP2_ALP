@@ -52,6 +52,17 @@ pp ii vs (Rec t1 t2 t3) =
       , nest 1 (parensIf (not (isAtom t2)) (pp ii vs t2))
       , nest 1 (parensIf (not (isAtom t3)) (pp ii vs t3)) ]
 
+pp ii vs (RL t1 t2 t3) =
+  sep [ text "RL"
+      , nest 1 (parensIf (not (isAtom t1)) (pp ii vs t1))
+      , nest 1 (parensIf (not (isAtom t2)) (pp ii vs t2))
+      , nest 1 (parensIf (not (isAtom t3)) (pp ii vs t3)) ]
+pp ii vs (Cons t1 xs) =
+  sep [ text "cons"
+      , nest 1 (parensIf(not (isAtom t1)) (pp ii vs t1))
+      , nest 1 (parensIf(not (isAtom xs)) (pp ii vs xs))]
+pp _ _ Nil = text "nil"
+
 
 isLam :: Term -> Bool
 isLam (Lam _ _) = True
@@ -69,6 +80,7 @@ isApp _         = False
 printType :: Type -> Doc
 printType EmptyT = text "E"
 printType NatT = text "Nat"
+printType ListT = text "List Nat"
 printType (FunT t1 t2) =
   sep [parensIf (isFun t1) (printType t1), text "->", printType t2]
 
@@ -76,6 +88,7 @@ isAtom :: Term -> Bool
 isAtom (Bound _) = True
 isAtom (Free _)  = True
 isAtom Zero      = True
+isAtom Nil       = True
 isAtom _         = False
 
 isFun :: Type -> Bool
@@ -91,6 +104,9 @@ fv (Let t   u       ) = fv t ++ fv u
 fv (Suc t)            = fv t
 fv (Rec t1 t2 t3    ) = fv t1 ++ fv t2 ++ fv t3
 fv (Zero)             = []
+fv (RL t1 t2 t3)      = fv t1 ++ fv t2 ++ fv t3
+fv (Cons t xs)        = fv t ++ fv xs
+fv (Nil)              = []
 
 
 ---

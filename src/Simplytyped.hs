@@ -45,6 +45,9 @@ conversionaux (LLet x t1 t2) xs = Let (conversionaux t1 xs) (conversionaux t2 (x
 conversionaux (LZero) xs = Zero
 conversionaux (LSuc t) xs = Suc (conversionaux t xs)
 conversionaux (LRec t1 t2 t3) xs =  Rec (conversionaux t1 xs) (conversionaux t2 xs) (conversionaux t3 xs)
+conversionaux (LNil) xs          = Nil
+conversionaux (LCons t t2) xs    = Cons (conversionaux t xs) (conversionaux t2 xs)
+conversionaux (LRL t1 t2 t3) xs = RL (conversionaux t1 xs) (conversionaux t2 xs) (conversionaux t3 xs)
 
 
 
@@ -62,12 +65,20 @@ sub i t (Lam t'  u)           = Lam t' (sub (i + 1) t u)
 sub i t (Let t1 t2) = Let (sub i t t1) (sub (i + 1) t t2)
 sub i t  Zero       = Zero
 sub i t (Suc n)     = Suc (sub i t n)
-sub i t (Rec t1 t2 t3) = Rec (sub i t t1) (sub i t t2) (sub i t t3) 
+sub i t (Rec t1 t2 t3) = Rec (sub i t t1) (sub i t t2) (sub i t t3)
+sub i t (Nil)       = Nil
+sub i t (Cons t1 t2) = Cons (sub i t t1) (sub i t t2)
+sub i t (RL t1 t2 t3) = RL (sub i t t1) (sub i t t2) (sub i t t3)
 
 -- convierte un valor en el término equivalente
 quote :: Value -> Term
 quote (VLam t f) = Lam t f
 quote (VNum n) = quoteNum n
+quote (VList xs) = quoteList xs
+
+quoteList :: ListVal -> Term
+quoteList VNil = Nil
+quoteList (VCons n ns) = Cons (quoteNum n) (quoteList ns) 
 
 quoteNum :: NumVal -> Term
 quoteNum NZero    = Zero
@@ -90,11 +101,24 @@ eval nvs (Suc t)              = case eval nvs t of
 eval nvs (Rec t1 t2 t3)       = case eval nvs t3 of
                                 VNum NZero -> eval nvs t1
                                 VNum (NSuc n) -> eval nvs (t2 :@: (Rec t1 t2 (quote (VNum n))) :@: quote (VNum n)) 
+
+eval nvs Nil                  = VList VNil
+eval nvs (Cons t1 t2)         = case eval nvs t1 of
+                                (VNum n) -> case eval nvs t2 of
+                                  (VList xs) -> VList (VCons n xs)
+
+
 --[(name, (v, t))]
 ----------------------
 --- type checker
 -----------------------
 
+  -- -- Valores Numericos
+  -- data NumVal = NZero | NSuc NumVal deriving (Show, Eq)
+
+  -- -- Listas de números
+  -- data ListVal = VNil | VCons NumVal ListVal deriving (Show, Eq)
+   
 -- infiere el tipo de un término
 infer :: NameEnv Value Type -> Term -> Either String Type
 infer = infer' []
