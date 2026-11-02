@@ -107,18 +107,16 @@ eval nvs (Cons t1 t2)         = case eval nvs t1 of
                                 (VNum n) -> case eval nvs t2 of
                                   (VList xs) -> VList (VCons n xs)
 
+eval nvs (RL t1 t2 t3)        = case eval nvs t3 of
+                                (VList VNil) -> eval nvs t1
+                                (VList (VCons n xs)) -> eval nvs (t2 :@: quoteNum n :@: (RL t1 t2 (quoteList xs)))
+
 
 --[(name, (v, t))]
 ----------------------
 --- type checker
 -----------------------
 
-  -- -- Valores Numericos
-  -- data NumVal = NZero | NSuc NumVal deriving (Show, Eq)
-
-  -- -- Listas de números
-  -- data ListVal = VNil | VCons NumVal ListVal deriving (Show, Eq)
-   
 -- infiere el tipo de un término
 infer :: NameEnv Value Type -> Term -> Either String Type
 infer = infer' []
@@ -173,5 +171,19 @@ infer' c e (Rec t1 t2 t3) =
     else if tt3 /= NatT
       then matchError NatT tt3                       -- t3 no es Nat
       else ret tt1                                   -- todo bien: el resultado es T
+
+infer' _ _ Nil          = ret ListT
+infer' c e (Cons n xs)  = infer' c e n  >>= \tn ->
+                          infer' c e xs >>= \txs ->
+                          if tn /= NatT then matchError NatT tn
+                          else if txs /= ListT then matchError ListT txs
+                          else ret ListT
+
+infer' c e (RL t1 t2 t3) = infer' c e t1 >>= \tt1 ->
+                          infer' c e t2 >>= \tt2 ->
+                          infer' c e t3 >>= \tt3 ->
+                          if tt2 /= (FunT NatT (FunT tt1 tt1)) then matchError (FunT NatT (FunT tt1 tt1))  tt2
+                          else if tt3 /= ListT then matchError ListT tt3
+                          else ret tt1
 
 
